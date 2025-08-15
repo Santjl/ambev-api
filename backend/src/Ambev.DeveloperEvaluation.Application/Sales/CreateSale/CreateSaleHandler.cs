@@ -31,7 +31,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale
             _productGateway = productGateway;
             _customerGateway = customerGateway;
             _branchGateway = branchGateway;
-            _validator = new CreateSaleValidator(_branchGateway, _customerGateway, _productGateway);
+            _validator = new CreateSaleValidator();
             _mapper = mapper;
         }
         public async Task<CreateSaleResult> Handle(CreateSaleCommand command, CancellationToken ct)
