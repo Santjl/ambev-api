@@ -28,6 +28,7 @@ namespace Ambev.DeveloperEvaluation.Domain.Entities
                 ProductName = productName.Trim()
             };
             si.Apply(qty, unitPrice);
+            AddDomainEvent();
             return si;
         }
 
