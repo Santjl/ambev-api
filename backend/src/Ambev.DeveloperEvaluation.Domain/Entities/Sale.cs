@@ -79,9 +79,6 @@ namespace Ambev.DeveloperEvaluation.Domain.Entities
         {
             if (IsCancelled) return;
             IsCancelled = true;
-
-            foreach (var item in _items.Where(i => !i.IsCancelled))
-                item.Cancel();
         }
 
         private void RecalculateTotal()

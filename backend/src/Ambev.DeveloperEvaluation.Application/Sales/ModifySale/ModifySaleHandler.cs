@@ -94,7 +94,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
             {
                 foreach (var message in messages)
                 {
-                    await _messageBus.PublishAsync(message, cancellationToken);
+                    await _messageBus.PublishEventAsync(message, cancellationToken);
                 }
             }
 

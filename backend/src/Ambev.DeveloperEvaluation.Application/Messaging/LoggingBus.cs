@@ -4,10 +4,14 @@ namespace Ambev.DeveloperEvaluation.Application.Messaging
 {
     public sealed class LoggingBus(ILogger<LoggingBus> logger) : IMessageBus
     {
-        public Task PublishAsync(IntegrationMessage message, CancellationToken ct)
+        public Task PublishAsync(IntegrationMessage[] messages, CancellationToken ct)
         {
-            logger.LogInformation("Publishing event {Name} payload={@Payload}",
+            foreach (var message in messages)
+            {
+                logger.LogInformation("Publishing event {Name} payload={@Payload}",
                     message.Name, message.Payload);
+            }
+            
 
             return Task.CompletedTask;
         }

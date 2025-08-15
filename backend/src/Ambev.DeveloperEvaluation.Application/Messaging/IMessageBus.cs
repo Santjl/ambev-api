@@ -2,6 +2,6 @@
 {
     public interface IMessageBus
     {
-        Task PublishAsync(IntegrationMessage message, CancellationToken ct);
+        Task PublishAsync(IntegrationMessage[] messages, CancellationToken ct);
     }
 }

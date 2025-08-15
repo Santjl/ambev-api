@@ -54,7 +54,6 @@ public class Program
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             builder.Services.AddSingleton<IMessageBus, LoggingBus>();
-            builder.Services.AddSingleton<ICorrelationProvider, HttpCorrelationProvider>();
 
             var app = builder.Build();
             app.UseMiddleware<ValidationExceptionMiddleware>();
