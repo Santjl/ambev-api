@@ -10,6 +10,7 @@ using FluentValidation;
 using Moq;
 using Xunit;
 using static Ambev.DeveloperEvaluation.Application.Common.Ports.DTos;
+using Ambev.DeveloperEvaluation.Unit.Application.TestData;
 
 namespace Ambev.DeveloperEvaluation.Unit.Application;
 
@@ -31,32 +32,14 @@ public class CreateSaleHandlerTest
             _mapper.Object,
             _messageBus.Object);
 
-    private CreateSaleCommand GetValidCommand()
-    {
-        return new CreateSaleCommand
-        {
-            Number = "SALE-001",
-            CustomerId = Guid.NewGuid(),
-            BranchId = Guid.NewGuid(),
-            Items = new List<CreateSaleItemCommand>
-            {
-                new CreateSaleItemCommand
-                {
-                    ProductId = Guid.NewGuid(),
-                    Quantity = 2
-                }
-            }
-        };
-    }
-
     [Fact(DisplayName = "Should create sale successfully")]
     public async Task Handle_ShouldCreateSaleSuccessfully()
     {
         // Arrange
-        var command = GetValidCommand();
-        var customer = new CustomerDto (command.CustomerId,"Customer");
-        var branch = new BranchDto (command.BranchId, "Branch");
-        var product = new ProductDto (command.Items[0].ProductId, "Product", 10m);
+        var command = CreateSaleHandlerTestData.GenerateValidCommand();
+        var customer = new CustomerDto(command.CustomerId, "Customer");
+        var branch = new BranchDto(command.BranchId, "Branch");
+        var product = new ProductDto(command.Items[0].ProductId, "Product", 10m);
 
         _customerGateway.Setup(x => x.GetByIdAsync(command.CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(customer);
@@ -92,8 +75,7 @@ public class CreateSaleHandlerTest
     public async Task Handle_ShouldThrowValidationException_WhenCommandIsInvalid()
     {
         // Arrange
-        var command = GetValidCommand();
-        command.Number = "";
+        var command = CreateSaleHandlerTestData.GenerateInvalidCommand();
 
         var handler = CreateHandler();
 
@@ -108,7 +90,7 @@ public class CreateSaleHandlerTest
     public async Task Handle_ShouldThrowDomainException_WhenCustomerNotFound()
     {
         // Arrange
-        var command = GetValidCommand();
+        var command = CreateSaleHandlerTestData.GenerateCommandWithNonExistentCustomer();
         _customerGateway.Setup(x => x.GetByIdAsync(command.CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((CustomerDto)null!);
 
@@ -125,8 +107,8 @@ public class CreateSaleHandlerTest
     public async Task Handle_ShouldThrowDomainException_WhenBranchNotFound()
     {
         // Arrange
-        var command = GetValidCommand();
-        var customer = new CustomerDto (command.CustomerId, "Customer");
+        var command = CreateSaleHandlerTestData.GenerateCommandWithNonExistentBranch();
+        var customer = new CustomerDto(command.CustomerId, "Customer");
         _customerGateway.Setup(x => x.GetByIdAsync(command.CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(customer);
         _branchGateway.Setup(x => x.GetByIdAsync(command.BranchId, It.IsAny<CancellationToken>()))
@@ -145,9 +127,9 @@ public class CreateSaleHandlerTest
     public async Task Handle_ShouldThrowDomainException_WhenProductNotFound()
     {
         // Arrange
-        var command = GetValidCommand();
-        var customer = new CustomerDto (command.CustomerId, "Customer");
-        var branch = new BranchDto (command.BranchId, "Branch");
+        var command = CreateSaleHandlerTestData.GenerateCommandWithNonExistentProduct();
+        var customer = new CustomerDto(command.CustomerId, "Customer");
+        var branch = new BranchDto(command.BranchId, "Branch");
         _customerGateway.Setup(x => x.GetByIdAsync(command.CustomerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(customer);
         _branchGateway.Setup(x => x.GetByIdAsync(command.BranchId, It.IsAny<CancellationToken>()))

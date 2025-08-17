@@ -13,7 +13,7 @@ namespace Ambev.DeveloperEvaluation.Unit.Application;
 /// <summary>
 /// Contains unit tests for the <see cref="CreateUserHandler"/> class.
 /// </summary>
-public class CreateUserHandlerTests
+public class CreateUserHandlerTest
 {
     private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
@@ -21,10 +21,10 @@ public class CreateUserHandlerTests
     private readonly CreateUserHandler _handler;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreateUserHandlerTests"/> class.
+    /// Initializes a new instance of the <see cref="CreateUserHandlerTest"/> class.
     /// Sets up the test dependencies and creates fake data generators.
     /// </summary>
-    public CreateUserHandlerTests()
+    public CreateUserHandlerTest()
     {
         _userRepository = Substitute.For<IUserRepository>();
         _mapper = Substitute.For<IMapper>();
