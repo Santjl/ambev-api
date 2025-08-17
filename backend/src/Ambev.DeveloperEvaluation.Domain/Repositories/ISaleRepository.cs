@@ -13,5 +13,6 @@ namespace Ambev.DeveloperEvaluation.Domain.Repositories
         Task<Sale> CreateAsync(Sale sale, CancellationToken ct);
         Task<Sale?> GetByNumberAsync(string number, CancellationToken ct);
         Task SaveChangesAsync(CancellationToken ct);
+        Task<List<Sale>> GetAllSalesAsync(CancellationToken ct);
     }
 }

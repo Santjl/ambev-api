@@ -26,6 +26,11 @@ namespace Ambev.DeveloperEvaluation.ORM.Repositories
                 .FirstOrDefaultAsync(s => s.Number == number, ct);
         }
 
+        public Task<List<Sale>> GetAllSalesAsync(CancellationToken ct)
+        {
+            return context.Sales.ToListAsync(ct);
+        }
+
         public async Task SaveChangesAsync(CancellationToken ct)
         {
             await context.SaveChangesAsync(ct);

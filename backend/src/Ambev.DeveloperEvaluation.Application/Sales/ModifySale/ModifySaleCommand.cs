@@ -4,7 +4,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
 {
     public class ModifySaleCommand : IRequest<ModifySaleResult>
     {
-        public Guid SaleId { get; }
-        public List<ModifySaleItemCommand> Items { get; } = new();
+        public Guid SaleId { get; set; }
+        public List<ModifySaleItemCommand> Items { get; set; } = new();
     }
 }

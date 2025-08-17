@@ -1,6 +1,7 @@
 ﻿using Ambev.DeveloperEvaluation.Application.Common.Ports;
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSale;
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Application.Sales.GetAllSales;
 using Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 using Ambev.DeveloperEvaluation.Application.Sales.ModifySale;
 using Ambev.DeveloperEvaluation.Application.Users.GetUser;
@@ -86,14 +87,36 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors);
 
-            var command = _mapper.Map<GetSaleQuery>(request.Id);
-            var response = await _mediator.Send(command, cancellationToken);
+            var query = _mapper.Map<GetSaleQuery>(request.Id);
+            var response = await _mediator.Send(query, cancellationToken);
 
             return Ok(new ApiResponseWithData<GetSaleResponse>
             {
                 Success = true,
                 Message = "Sale retrieved successfully",
                 Data = _mapper.Map<GetSaleResponse>(response)
+            });
+        }
+
+        /// <summary>
+        /// Retrieves all sales.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>All sales with details</returns>
+        [HttpGet()]
+        [ProducesResponseType(typeof(ApiResponseWithData<List<GetSaleResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetAllSales(CancellationToken cancellationToken)
+        {
+            var query = new GetAllSalesQuery();
+
+            var response = await _mediator.Send(query, cancellationToken);
+
+            return Ok(new ApiResponseWithData<List<GetSaleResponse>>
+            {
+                Success = true,
+                Message = "All sales retrieved successfully",
+                Data = _mapper.Map<List<GetSaleResponse>>(response)
             });
         }
 
