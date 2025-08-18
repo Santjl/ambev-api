@@ -6,7 +6,6 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.ModifySale
     {
         public ModifySaleRequestValidator()
         {
-            RuleFor(x => x.SaleId).NotEmpty();
             RuleFor(x => x.Items).NotEmpty();
 
             RuleFor(x => x.Items.Select(i => i.ProductId))
@@ -16,7 +15,6 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.ModifySale
             RuleForEach(x => x.Items).ChildRules(cr =>
             {
                 cr.RuleFor(i => i.ProductId).NotEmpty();
-                cr.RuleFor(i => i.Quantity).GreaterThanOrEqualTo(0).LessThanOrEqualTo(20);
             });
         }
     }

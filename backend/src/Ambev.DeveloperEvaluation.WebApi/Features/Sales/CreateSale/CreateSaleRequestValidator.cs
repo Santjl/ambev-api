@@ -6,11 +6,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.CreateSale
 {
     public class CreateSaleRequestValidator : AbstractValidator<CreateSaleRequest>
     {
-        public CreateSaleRequestValidator(
-                IBranchGateway branches,
-                ICustomerGateway customers,
-                IProductGateway product
-            )
+        public CreateSaleRequestValidator()
         {
             RuleFor(x => x.Number)
                 .NotEmpty()
@@ -28,15 +24,11 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.CreateSale
                 .NotEmpty()
                 .WithMessage("At least one sale item is required.");
 
-            RuleFor(x => x.CustomerId)
-            .MustAsync(async (id, ct) => await customers.GetByIdAsync(id, ct) is not null)
-            .WithMessage("Customer does not exist.");
+            RuleFor(x => x.Items.Select(i => i.ProductId))
+                .Must(ids => ids.Distinct().Count() == ids.Count())
+                .WithMessage("Duplicate ProductId in items payload.");
 
-            RuleFor(x => x.BranchId)
-                .MustAsync(async (id, ct) => await branches.GetByIdAsync(id, ct) is not null)
-                .WithMessage("Branch does not exist.");
-
-            RuleForEach(x => x.Items).SetValidator(new CreateSaleItemRequestValidator(product));
+            RuleForEach(x => x.Items).SetValidator(new CreateSaleItemRequestValidator());
         }
     }
 }
