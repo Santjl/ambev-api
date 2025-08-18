@@ -37,7 +37,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CancelSale
                 await _saleRepository.SaveChangesAsync(cancellationToken);
 
                 var message = new IntegrationMessage("sales.sale.cancelled", new SaleCancelledEvent(sale.Id), DateTimeOffset.Now);
-                await _messageBus.PublishEventAsync(message, cancellationToken);
+                await _messageBus.PublishAsync(message, cancellationToken);
             }
 
             return new CancelSaleResult { Success = true };

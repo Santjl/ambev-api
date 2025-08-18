@@ -87,16 +87,20 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
                 }
             }
 
-            await _saleRepository.SaveChangesAsync(cancellationToken);
-            messages.Add(new IntegrationMessage("sales.sale.modified", new SaleModifiedEvent(sale), DateTimeOffset.Now));
-
-            if (messages.Count > 0)
+            if(sale.Items.Where(x => !x.IsCancelled).Count() == 0)
             {
-                foreach (var message in messages)
-                {
-                    await _messageBus.PublishEventAsync(message, cancellationToken);
-                }
+                sale.Cancel();
+                messages.Add(new IntegrationMessage("sales.sale.cancelled", new SaleCancelledEvent(sale.Id), DateTimeOffset.Now));
             }
+
+
+            await _saleRepository.SaveChangesAsync(cancellationToken);
+            if (!sale.IsCancelled)
+            {
+                messages.Add(new IntegrationMessage("sales.sale.modified", new SaleModifiedEvent(sale), DateTimeOffset.Now));
+            }
+
+            await _messageBus.PublishMessagesAsync(messages, cancellationToken);
 
             return _mapper.Map<ModifySaleResult>(sale);
         }
