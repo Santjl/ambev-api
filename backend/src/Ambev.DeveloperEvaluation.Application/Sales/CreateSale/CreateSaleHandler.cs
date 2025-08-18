@@ -62,7 +62,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale
 
             var saleCreated = await _saleRepository.CreateAsync(sale, cancellationToken);
 
-            var message = new IntegrationMessage("sales.sale.created", new SaleCreatedEvent(saleCreated), DateTimeOffset.Now);
+            var message = new IntegrationMessage(EventsConsts.SaleCreated, new SaleCreatedEvent(saleCreated), DateTimeOffset.Now);
             await _messageBus.PublishAsync(message, cancellationToken);
 
             return _mapper.Map<CreateSaleResult>(saleCreated);

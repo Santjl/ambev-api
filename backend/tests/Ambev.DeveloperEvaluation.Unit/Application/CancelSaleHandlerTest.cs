@@ -64,7 +64,7 @@ public class CancelSaleHandlerTest
         sale.IsCancelled.Should().BeTrue();
         _saleRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _messageBus.Verify(x => x.PublishAsync(It.Is<IntegrationMessage>(msg =>
-                msg.Name == "sales.sale.cancelled" &&
+                msg.Name == EventsConsts.SaleCancelled &&
                 msg.Payload is SaleCancelledEvent),
                 It.IsAny<CancellationToken>()), Times.Once);
     }

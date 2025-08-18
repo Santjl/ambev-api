@@ -69,7 +69,7 @@ public class CreateSaleHandlerTest
         result.Id.Should().Be(sale.Id);
         _saleRepository.Verify(x => x.CreateAsync(It.IsAny<Sale>(), It.IsAny<CancellationToken>()), Times.Once);
         _messageBus.Verify(x => x.PublishAsync(It.Is<IntegrationMessage>(msg =>
-                msg.Name == "sales.sale.created" &&
+                msg.Name == EventsConsts.SaleCreated &&
                 msg.Payload is SaleCreatedEvent),
                 It.IsAny<CancellationToken>()), Times.Once);
     }

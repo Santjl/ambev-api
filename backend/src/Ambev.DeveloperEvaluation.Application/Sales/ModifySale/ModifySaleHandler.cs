@@ -58,7 +58,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
                     if (incoming.Quantity == 0)
                     {
                         sale.CancelItem(current.Id);
-                        var message = new IntegrationMessage("sales.item.cancelled", new SaleItemCancelledEvent(current.Id), DateTimeOffset.UtcNow);
+                        var message = new IntegrationMessage(EventsConsts.SaleItemCancelled, new SaleItemCancelledEvent(current.Id), DateTimeOffset.UtcNow);
                         messages.Add(message);
                         continue;
                     }
@@ -82,7 +82,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
                 if (!item.IsCancelled)
                 {
                     sale.CancelItem(item.Id);
-                    var message = new IntegrationMessage("sales.item.cancelled", new SaleItemCancelledEvent(item.Id), DateTimeOffset.Now);
+                    var message = new IntegrationMessage(EventsConsts.SaleItemCancelled, new SaleItemCancelledEvent(item.Id), DateTimeOffset.Now);
                     messages.Add(message);
                 }
             }
@@ -90,14 +90,14 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ModifySale
             if(sale.Items.Where(x => !x.IsCancelled).Count() == 0)
             {
                 sale.Cancel();
-                messages.Add(new IntegrationMessage("sales.sale.cancelled", new SaleCancelledEvent(sale.Id), DateTimeOffset.Now));
+                messages.Add(new IntegrationMessage(EventsConsts.SaleCancelled, new SaleCancelledEvent(sale.Id), DateTimeOffset.Now));
             }
 
 
             await _saleRepository.SaveChangesAsync(cancellationToken);
             if (!sale.IsCancelled)
             {
-                messages.Add(new IntegrationMessage("sales.sale.modified", new SaleModifiedEvent(sale), DateTimeOffset.Now));
+                messages.Add(new IntegrationMessage(EventsConsts.SaleModified, new SaleModifiedEvent(sale), DateTimeOffset.Now));
             }
 
             await _messageBus.PublishMessagesAsync(messages, cancellationToken);

@@ -61,7 +61,7 @@ public class ModifySaleHandlerTest
         _saleRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
                 msgs.Count() == 1 &&
-                msgs.First().Name == "sales.sale.modified" &&
+                msgs.First().Name == EventsConsts.SaleModified &&
                 msgs.First().Payload is SaleModifiedEvent),
                 It.IsAny<CancellationToken>()),Times.Once);
         sale.Items.Should().ContainSingle(i => i.ProductId == productId && i.Quantity == 2);
@@ -176,9 +176,9 @@ public class ModifySaleHandlerTest
         // Assert
         sale.Items.First(i => i.ProductId != newProductId).IsCancelled.Should().BeTrue();
         _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
-            msgs.Where(x => x.Name == "sales.item.cancelled").Count() == 3 &&
-            msgs.Where(x => x.Name == "sales.sale.modified").Count() == 1 &&
-            msgs.Where(x => x.Name == "sales.sale.cancelled").Count() == 0 &&
+            msgs.Where(x => x.Name == EventsConsts.SaleItemCancelled).Count() == 3 &&
+            msgs.Where(x => x.Name == EventsConsts.SaleModified).Count() == 1 &&
+            msgs.Where(x => x.Name == EventsConsts.SaleCancelled).Count() == 0 &&
             msgs.First().Payload is SaleItemCancelledEvent),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -242,7 +242,7 @@ public class ModifySaleHandlerTest
         sale.Items.First(i => i.ProductId == productId).Quantity.Should().Be(5);
         _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
                 msgs.Count() == 1 &&
-                msgs.First().Name == "sales.sale.modified" &&
+                msgs.First().Name == EventsConsts.SaleModified &&
                 msgs.First().Payload is SaleModifiedEvent),
                 It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -279,8 +279,8 @@ public class ModifySaleHandlerTest
         result.Id.Should().Be(saleId);
         _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
                 msgs.Count() == 2 &&
-                msgs.Where(x => x.Name == "sales.sale.cancelled" && x.Payload is SaleCancelledEvent).Count() == 1 &&
-                msgs.Where(x => x.Name == "sales.item.cancelled" && x.Payload is SaleItemCancelledEvent).Count() == 1),
+                msgs.Where(x => x.Name == EventsConsts.SaleCancelled && x.Payload is SaleCancelledEvent).Count() == 1 &&
+                msgs.Where(x => x.Name == EventsConsts.SaleItemCancelled && x.Payload is SaleItemCancelledEvent).Count() == 1),
                 It.IsAny<CancellationToken>()), Times.Once);
     }
 }
