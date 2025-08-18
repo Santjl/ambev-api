@@ -2,7 +2,7 @@
 
 namespace Ambev.DeveloperEvaluation.WebApi.Setups
 {
-    public static class SwaggerSetup
+    public static class AddSwaggerExtension
     {
         public static IServiceCollection ConfigureSwaggerSetup(this IServiceCollection services)
         {
