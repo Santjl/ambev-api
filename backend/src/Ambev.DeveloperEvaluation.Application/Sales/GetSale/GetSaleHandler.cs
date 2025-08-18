@@ -26,7 +26,7 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.GetSale
 
             var user = await _saleRepository.GetByIdAsync(request.Id, cancellationToken);
             if (user == null)
-                throw new KeyNotFoundException($"Sale with ID {request.Id} not found");
+                throw new KeyNotFoundException($"Sale not found.");
 
             return _mapper.Map<GetSaleResult>(user);
         }
