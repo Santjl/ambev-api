@@ -28,6 +28,10 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale
                 .NotEmpty()
                 .WithMessage("At least one sale item is required.");
 
+            RuleFor(x => x.Items.Select(i => i.ProductId))
+                .Must(ids => ids.Distinct().Count() == ids.Count())
+                .WithMessage("Duplicate ProductId in items payload.");
+
             RuleForEach(x => x.Items).SetValidator(new CreateSaleItemValidator());
         }
     }
