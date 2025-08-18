@@ -92,7 +92,7 @@ Now you can call any secured endpoint.
 }
 ```
 
-**Response – 400 Bad Request (quantity > 20)**
+**Response – 400 Bad Request (Example: quantity > 20)**
 ```json
 {
   "success": false,
