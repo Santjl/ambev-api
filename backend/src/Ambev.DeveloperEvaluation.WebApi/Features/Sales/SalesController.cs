@@ -151,18 +151,18 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
         /// Modifies the items of an existing sale.
         /// Only sale items can be added, updated, or removed; other sale properties cannot be changed.
         /// </summary>
-        /// <param name="request">The request containing the sale ID and the new list of items.</param>
+        /// <param name="request">The request containing the list of items.</param>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
         /// <returns>
         /// Returns <see cref="NoContentResult"/> if the modification is successful,
         /// <see cref="ApiResponse"/> with validation errors if the request is invalid.
         /// or <see cref="ApiResponse"/> if not found.
         /// </returns>
-        [HttpPut("{id}")]
+        [HttpPut()]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ModifySale([FromRoute] Guid id, [FromBody] ModifySaleRequest request, CancellationToken cancellationToken)
+        public async Task<IActionResult> ModifySale([FromBody] ModifySaleRequest request, CancellationToken cancellationToken)
         {
             var validator = new ModifySaleRequestValidator();
             var validationResult = await validator.ValidateAsync(request, cancellationToken);
@@ -177,7 +177,6 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
                 });
 
             var command = _mapper.Map<ModifySaleCommand>(request);
-            command.SaleId = id;
             var response = await _mediator.Send(command, cancellationToken);
 
             return NoContent();

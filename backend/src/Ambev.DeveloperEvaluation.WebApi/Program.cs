@@ -7,14 +7,12 @@ using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.WebApi.Extensions;
-using Ambev.DeveloperEvaluation.WebApi.Middleware;
+using Ambev.DeveloperEvaluation.WebApi.Filters;
 using Ambev.DeveloperEvaluation.WebApi.Setups;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Serilog;
-using System;
 
 namespace Ambev.DeveloperEvaluation.WebApi;
 
@@ -55,6 +53,8 @@ public class Program
                 );
             });
 
+            builder.Services.AddProblemDetails();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             builder.Services.AddSingleton<IMessageBus, LoggingBus>();
@@ -68,9 +68,7 @@ public class Program
 
             var app = builder.Build();
 
-            app.UseMiddleware<ValidationExceptionMiddleware>();
-            app.UseMiddleware<NotFoundExceptionMiddleware>();
-            app.UseMiddleware<ApplicationExceptionMiddleware>();
+            app.UseExceptionHandler();
 
             var runMigrations = app.Environment.IsDevelopment() ||
                         builder.Configuration.GetValue<bool>("APPLY_MIGRATIONS_ON_START");
