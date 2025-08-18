@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Ambev.DeveloperEvaluation.Common.Validation;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Common;
@@ -13,11 +15,11 @@ public class BaseController : ControllerBase
     protected string GetCurrentUserEmail() =>
         User.FindFirst(ClaimTypes.Email)?.Value ?? throw new NullReferenceException();
 
-    protected IActionResult Ok<T>(T data) =>
-            base.Ok(new ApiResponseWithData<T> { Data = data, Success = true });
+    protected IActionResult Ok<T>(T data, string message) =>
+            base.Ok(new ApiResponseWithData<T> { Data = data, Message = message, Success = true });
 
-    protected IActionResult Created<T>(string routeName, object routeValues, T data) =>
-        base.CreatedAtRoute(routeName, routeValues, new ApiResponseWithData<T> { Data = data, Success = true });
+    protected IActionResult Created<T>(T data, string message) =>
+        base.CreatedAtRoute(null, null, new ApiResponseWithData<T> { Data = data, Message = message, Success = true });
 
     protected IActionResult BadRequest(string message) =>
         base.BadRequest(new ApiResponse { Message = message, Success = false });
