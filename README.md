@@ -53,7 +53,7 @@ API will be available at:
 ## 🔑 Authentication
 
 To authenticate in Swagger UI:
-
+1. Create an user in `POST /api/users`
 1. Request a token via `POST /api/auth/login` with your credentials.
 2. Copy the returned **JWT token**.
 3. In Swagger UI, click **Authorize** and paste:  
