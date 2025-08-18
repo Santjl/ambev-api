@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Application.Users.GetUser;
 using AutoMapper;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Users.GetUser;
@@ -12,6 +13,7 @@ public class GetUserProfile : Profile
     /// </summary>
     public GetUserProfile()
     {
+        CreateMap<GetUserResult, GetUserResponse>();
         CreateMap<Guid, Application.Users.GetUser.GetUserQuery>()
             .ConstructUsing(id => new Application.Users.GetUser.GetUserQuery(id));
     }
