@@ -7,6 +7,8 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
+namespace Ambev.DeveloperEvaluation.Unit.Application;
+
 public class GetAllSalesQueryHandlerTest
 {
     [Fact(DisplayName = "Should return mapped sales list when repository returns sales")]

@@ -57,7 +57,7 @@ public class CreateSaleHandlerTest
         _mapper.Setup(x => x.Map<CreateSaleResult>(It.IsAny<Sale>()))
             .Returns(new CreateSaleResult { Id = sale.Id });
 
-        _messageBus.Setup(x => x.PublishEventAsync(It.IsAny<SaleCreatedEvent>(), It.IsAny<CancellationToken>()))
+        _messageBus.Setup(x => x.PublishAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var handler = CreateHandler();
@@ -68,7 +68,10 @@ public class CreateSaleHandlerTest
         // Assert
         result.Id.Should().Be(sale.Id);
         _saleRepository.Verify(x => x.CreateAsync(It.IsAny<Sale>(), It.IsAny<CancellationToken>()), Times.Once);
-        _messageBus.Verify(x => x.PublishEventAsync(It.IsAny<SaleCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _messageBus.Verify(x => x.PublishAsync(It.Is<IntegrationMessage>(msg =>
+                msg.Name == "sales.sale.created" &&
+                msg.Payload is SaleCreatedEvent),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact(DisplayName = "Should throw ValidationException when command is invalid")]

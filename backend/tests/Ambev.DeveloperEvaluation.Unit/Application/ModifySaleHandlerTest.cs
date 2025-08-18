@@ -2,124 +2,185 @@
 using Ambev.DeveloperEvaluation.Application.Messaging;
 using Ambev.DeveloperEvaluation.Application.Sales.ModifySale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Unit.Application.TestData;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Xunit;
 using static Ambev.DeveloperEvaluation.Application.Common.Ports.DTos;
 
+namespace Ambev.DeveloperEvaluation.Unit.Application;
+
 public class ModifySaleHandlerTest
 {
-    [Fact(DisplayName = "Should be modify sale with success when command data is valid")]
+    private readonly Mock<ISaleRepository> _saleRepository = new();
+    private readonly Mock<IProductGateway> _productGateway = new();
+    private readonly Mock<IMapper> _mapper = new();
+    private readonly Mock<IMessageBus> _messageBus = new();
+
+    private ModifySaleHandler CreateHandler() =>
+        new ModifySaleHandler(
+            _saleRepository.Object,
+            _productGateway.Object,
+            _mapper.Object,
+            _messageBus.Object
+        );
+
+    [Fact(DisplayName = "Should modify sale successfully when command data is valid")]
     public async Task Handle_ShouldModifySale_WhenValidCommand()
     {
         // Arrange
         var saleId = Guid.NewGuid();
-        var command = ModifySaleHandlerTestData.GenerateValidCommand(saleId);
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        var productGatewayMock = new Mock<IProductGateway>();
-        var mapperMock = new Mock<IMapper>();
-        var messageBusMock = new Mock<IMessageBus>();
+        var productId = SaleTestData.ValidProductId;
+        var command = new ModifySaleCommand
+        {
+            SaleId = saleId,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = productId, Quantity = 2 }
+            }
+        };
 
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(false);
-        saleMock.Setup(s => s.Items).Returns(new List<SaleItem>());
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
+        var sale = SaleTestData.CreateValidSale();
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
 
-        mapperMock.Setup(m => m.Map<ModifySaleResult>(It.IsAny<object>())).Returns(new ModifySaleResult { Id = saleId });
-
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, productGatewayMock.Object, mapperMock.Object, messageBusMock.Object);
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+        _productGateway.Setup(p => p.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProductDto(productId, "Product Test", 10m));
+        _messageBus.Setup(x => x.PublishMessagesAsync(It.IsAny<IEnumerable<IntegrationMessage>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _mapper.Setup(m => m.Map<ModifySaleResult>(It.IsAny<object>())).Returns(new ModifySaleResult { Id = saleId });
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await CreateHandler().Handle(command, CancellationToken.None);
 
         // Assert
         result.Id.Should().Be(saleId);
-        saleRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        messageBusMock.Verify(m => m.PublishEventAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _saleRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
+                msgs.Count() == 1 &&
+                msgs.First().Name == "sales.sale.modified" &&
+                msgs.First().Payload is SaleModifiedEvent),
+                It.IsAny<CancellationToken>()),Times.Once);
+        sale.Items.Should().ContainSingle(i => i.ProductId == productId && i.Quantity == 2);
     }
 
-    [Fact(DisplayName = "Should throw exception when SaleId is not found.")]
+    [Fact(DisplayName = "Should throw exception when SaleId does not exist")]
     public async Task Handle_ShouldThrow_WhenSaleIdDoesNotExist()
     {
         // Arrange
-        var command = ModifySaleHandlerTestData.GenerateCommandWithNonExistentSaleId();
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(command.SaleId, It.IsAny<CancellationToken>())).ReturnsAsync((Sale)null);
+        var saleId = Guid.NewGuid();
+        var command = new ModifySaleCommand
+        {
+            SaleId = saleId,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = SaleTestData.ValidProductId, Quantity = 2 }
+            }
+        };
 
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, Mock.Of<IProductGateway>(), Mock.Of<IMapper>(), Mock.Of<IMessageBus>());
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync((Sale)null!);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => handler.Handle(command, CancellationToken.None));
+        // Act
+        Func<Task> act = async () => await CreateHandler().Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
-    [Fact(DisplayName = "Should throw exception when try to modify cancelled sale")]
+    [Fact(DisplayName = "Should throw exception when trying to modify a cancelled sale")]
     public async Task Handle_ShouldThrowException_WhenSaleIsCancelled()
     {
         // Arrange
         var saleId = Guid.NewGuid();
-        var command = ModifySaleHandlerTestData.GenerateCommandForCancelledSale(saleId);
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(true);
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
+        var command = new ModifySaleCommand
+        {
+            SaleId = saleId,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = SaleTestData.ValidProductId, Quantity = 2 }
+            }
+        };
 
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, Mock.Of<IProductGateway>(), Mock.Of<IMapper>(), Mock.Of<IMessageBus>());
+        var sale = SaleTestData.CreateCancelledSale();
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApplicationException>(() => handler.Handle(command, CancellationToken.None));
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+
+        // Act
+        Func<Task> act = async () => await CreateHandler().Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ApplicationException>();
     }
 
-    [Fact(DisplayName = "Should throw exception when product does now exist")]
+    [Fact(DisplayName = "Should throw exception when product does not exist")]
     public async Task Handle_ShouldThrowException_WhenProductDoesNotExist()
     {
         // Arrange
         var saleId = Guid.NewGuid();
-        var command = ModifySaleHandlerTestData.GenerateCommandWithNonExistentProduct(saleId);
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(false);
-        saleMock.Setup(s => s.Items).Returns(new List<SaleItem>());
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
+        var productId = SaleTestData.ValidProductId;
+        var command = new ModifySaleCommand
+        {
+            SaleId = saleId,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = productId, Quantity = 2 }
+            }
+        };
 
-        var productGatewayMock = new Mock<IProductGateway>();
-        productGatewayMock.Setup(p => p.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((ProductDto)null!);
+        var sale = SaleTestData.CreateValidSale();
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
 
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, productGatewayMock.Object, Mock.Of<IMapper>(), Mock.Of<IMessageBus>());
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+        _productGateway.Setup(p => p.GetByIdAsync(productId, It.IsAny<CancellationToken>())).ReturnsAsync((ProductDto)null!);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApplicationException>(() => handler.Handle(command, CancellationToken.None));
+        // Act
+        Func<Task> act = async () => await CreateHandler().Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ApplicationException>();
     }
 
-    [Fact(DisplayName = "Should cancel item when quantity is update to zero.")]
+    [Fact(DisplayName = "Should cancel item when quantity is updated to zero")]
     public async Task Handle_ShouldCancelItem_WhenQuantityZero()
     {
         // Arrange
-        var saleId = Guid.NewGuid();
-        var productId = Guid.NewGuid();
-        var command = ModifySaleHandlerTestData.GenerateCommandToCancelItem(saleId, productId);
+        var productId = SaleTestData.ValidProductId;
+        var newProductId = Guid.NewGuid();
+        var sale = SaleTestData.CreateSaleWithMultipleItems();
 
-        var saleItemMock = new Mock<SaleItem>();
-        saleItemMock.SetupGet(i => i.ProductId).Returns(productId);
-        saleItemMock.SetupGet(i => i.Id).Returns(Guid.NewGuid());
-        saleItemMock.SetupGet(i => i.IsCancelled).Returns(false);
+        var command = new ModifySaleCommand
+        {
+            SaleId = sale.Id,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = newProductId, Quantity = 2 },
+                new() { ProductId = productId, Quantity = 0 }
+            }
+        };
 
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(false);
-        saleMock.Setup(s => s.Items).Returns(new List<SaleItem> { saleItemMock.Object });
-
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
-
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, Mock.Of<IProductGateway>(), Mock.Of<IMapper>(), Mock.Of<IMessageBus>());
+        _saleRepository.Setup(r => r.GetByIdAsync(sale.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+        _productGateway.Setup(p => p.GetByIdAsync(newProductId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProductDto(newProductId, "New Product", 20.0m));
+        _productGateway.Setup(p => p.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ProductDto(productId, "New Product", 20.0m));
+        _messageBus.Setup(x => x.PublishMessagesAsync(It.IsAny<IEnumerable<IntegrationMessage>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // Act
-        await handler.Handle(command, CancellationToken.None);
+        await CreateHandler().Handle(command, CancellationToken.None);
 
         // Assert
-        saleMock.Verify(s => s.CancelItem(saleItemMock.Object.Id), Times.Once);
+        sale.Items.First(i => i.ProductId != newProductId).IsCancelled.Should().BeTrue();
+        _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
+            msgs.Where(x => x.Name == "sales.item.cancelled").Count() == 3 &&
+            msgs.Where(x => x.Name == "sales.sale.modified").Count() == 1 &&
+            msgs.Where(x => x.Name == "sales.sale.cancelled").Count() == 0 &&
+            msgs.First().Payload is SaleItemCancelledEvent),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact(DisplayName = "Should add item to sale when product is not already in sale")]
@@ -127,38 +188,29 @@ public class ModifySaleHandlerTest
     {
         // Arrange
         var saleId = Guid.NewGuid();
-        var productId = Guid.NewGuid();
+        var productId = SaleTestData.ValidProductId;
         var command = new ModifySaleCommand
         {
             SaleId = saleId,
             Items = new List<ModifySaleItemCommand>
             {
-                new ModifySaleItemCommand { ProductId = productId, Quantity = 2 }
+                new() { ProductId = productId, Quantity = 2 }
             }
         };
 
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(false);
-        saleMock.Setup(s => s.Items).Returns(new List<SaleItem>());
+        var sale = SaleTestData.CreateValidSale();
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
 
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
 
-        var productMock = new ProductDto(productId, "Produto Teste", 10.0m);
-
-        var productGatewayMock = new Mock<IProductGateway>();
-        productGatewayMock.Setup(p => p.GetByIdAsync(productId, It.IsAny<CancellationToken>())).ReturnsAsync(productMock);
-
-        var mapperMock = new Mock<IMapper>();
-        var messageBusMock = new Mock<IMessageBus>();
-
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, productGatewayMock.Object, mapperMock.Object, messageBusMock.Object);
+        var productMock = new ProductDto(productId, "Product Test", 10.0m);
+        _productGateway.Setup(p => p.GetByIdAsync(productId, It.IsAny<CancellationToken>())).ReturnsAsync(productMock);
 
         // Act
-        await handler.Handle(command, CancellationToken.None);
+        await CreateHandler().Handle(command, CancellationToken.None);
 
         // Assert
-        saleMock.Verify(s => s.AddItem(productId, "Produto Teste", 2, 10.0m), Times.Once);
+        sale.Items.Should().ContainSingle(i => i.ProductId == productId && i.Quantity == 2 && i.UnitPrice == 10.0m);
     }
 
     [Fact(DisplayName = "Should update product quantity when already in sale")]
@@ -166,39 +218,69 @@ public class ModifySaleHandlerTest
     {
         // Arrange
         var saleId = Guid.NewGuid();
-        var productId = Guid.NewGuid();
-        var saleItemId = Guid.NewGuid();
+        var productId = SaleTestData.ValidProductId;
+        var sale = SaleTestData.CreateSaleWithItem(2, 15.0m);
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
+
         var command = new ModifySaleCommand
         {
             SaleId = saleId,
             Items = new List<ModifySaleItemCommand>
             {
-                new ModifySaleItemCommand { ProductId = productId, Quantity = 5 }
+                new() { ProductId = productId, Quantity = 5 }
             }
         };
 
-        var saleItemMock = new Mock<SaleItem>();
-        saleItemMock.SetupGet(i => i.ProductId).Returns(productId);
-        saleItemMock.SetupGet(i => i.Id).Returns(saleItemId);
-        saleItemMock.SetupGet(i => i.UnitPrice).Returns(15.0m);
-        saleItemMock.SetupGet(i => i.IsCancelled).Returns(false);
-
-        var saleMock = new Mock<Sale>();
-        saleMock.Setup(s => s.IsCancelled).Returns(false);
-        saleMock.Setup(s => s.Items).Returns(new List<SaleItem> { saleItemMock.Object });
-
-        var saleRepositoryMock = new Mock<ISaleRepository>();
-        saleRepositoryMock.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(saleMock.Object);
-
-        var mapperMock = new Mock<IMapper>();
-        var messageBusMock = new Mock<IMessageBus>();
-
-        var handler = new ModifySaleHandler(saleRepositoryMock.Object, Mock.Of<IProductGateway>(), mapperMock.Object, messageBusMock.Object);
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+        _messageBus.Setup(x => x.PublishMessagesAsync(It.IsAny<IEnumerable<IntegrationMessage>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // Act
-        await handler.Handle(command, CancellationToken.None);
+        await CreateHandler().Handle(command, CancellationToken.None);
 
         // Assert
-        saleMock.Verify(s => s.UpdateItem(saleItemId, 5, 15.0m), Times.Once);
+        sale.Items.First(i => i.ProductId == productId).Quantity.Should().Be(5);
+        _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
+                msgs.Count() == 1 &&
+                msgs.First().Name == "sales.sale.modified" &&
+                msgs.First().Payload is SaleModifiedEvent),
+                It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact(DisplayName = "Should cancel sale when all items are cancelled by quantity zero")]
+    public async Task Handle_ShouldCancelSale_WhenAllItemsCancelledByQuantityZero()
+    {
+        // Arrange
+        var saleId = Guid.NewGuid();
+        var productId = SaleTestData.ValidProductId;
+        var sale = SaleTestData.CreateSaleWithItem(2, 10m);
+        typeof(Sale).GetProperty("Id")?.SetValue(sale, saleId);
+
+        var command = new ModifySaleCommand
+        {
+            SaleId = saleId,
+            Items = new List<ModifySaleItemCommand>
+            {
+                new() { ProductId = productId, Quantity = 0 }
+            }
+        };
+
+        _saleRepository.Setup(r => r.GetByIdAsync(saleId, It.IsAny<CancellationToken>())).ReturnsAsync(sale);
+        _mapper.Setup(m => m.Map<ModifySaleResult>(It.IsAny<Sale>())).Returns(new ModifySaleResult { Id = saleId });
+        _messageBus.Setup(x => x.PublishMessagesAsync(It.IsAny<IEnumerable<IntegrationMessage>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await CreateHandler().Handle(command, CancellationToken.None);
+
+        // Assert
+        sale.IsCancelled.Should().BeTrue();
+        sale.Items.All(i => i.IsCancelled).Should().BeTrue();
+        result.Id.Should().Be(saleId);
+        _messageBus.Verify(x => x.PublishMessagesAsync(It.Is<IEnumerable<IntegrationMessage>>(msgs =>
+                msgs.Count() == 2 &&
+                msgs.Where(x => x.Name == "sales.sale.cancelled" && x.Payload is SaleCancelledEvent).Count() == 1 &&
+                msgs.Where(x => x.Name == "sales.item.cancelled" && x.Payload is SaleItemCancelledEvent).Count() == 1),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 }

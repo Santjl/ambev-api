@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.Application.Messaging;
 using Ambev.DeveloperEvaluation.Application.Sales.CancelSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using FluentAssertions;
 using FluentValidation;
@@ -50,7 +51,7 @@ public class CancelSaleHandlerTest
             .ReturnsAsync(sale);
         _saleRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _messageBus.Setup(x => x.PublishEventAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()))
+        _messageBus.Setup(x => x.PublishAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var handler = CreateHandler();
@@ -62,7 +63,10 @@ public class CancelSaleHandlerTest
         result.Success.Should().BeTrue();
         sale.IsCancelled.Should().BeTrue();
         _saleRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _messageBus.Verify(x => x.PublishEventAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+        _messageBus.Verify(x => x.PublishAsync(It.Is<IntegrationMessage>(msg =>
+                msg.Name == "sales.sale.cancelled" &&
+                msg.Payload is SaleCancelledEvent),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact(DisplayName = "Should not publish event if sale is already cancelled")]
@@ -84,7 +88,7 @@ public class CancelSaleHandlerTest
         // Assert
         result.Success.Should().BeTrue();
         _saleRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        _messageBus.Verify(x => x.PublishEventAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        _messageBus.Verify(x => x.PublishAsync(It.IsAny<IntegrationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact(DisplayName = "Should throw ValidationException when command is invalid")]

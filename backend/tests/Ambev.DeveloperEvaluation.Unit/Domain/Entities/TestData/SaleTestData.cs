@@ -5,9 +5,9 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 
 public static class SaleTestData
 {
-    public static Guid ValidProductId => Guid.NewGuid();
-    public static Guid ValidCustomerId => Guid.NewGuid();
-    public static Guid ValidBranchId => Guid.NewGuid();
+    public static Guid ValidProductId => Guid.Parse("b7dfa2e4-6472-452b-bafa-8ad593985214");
+    public static Guid ValidCustomerId => Guid.Parse("cc7a117a-f100-45a9-8ac8-6789ce6eb323");
+    public static Guid ValidBranchId => Guid.Parse("8466f144-386e-4fab-bfea-38a4cc27121a");
 
     public static string ValidSaleNumber => "SALE-001";
     public static string ValidCustomerName => "Customer Test";

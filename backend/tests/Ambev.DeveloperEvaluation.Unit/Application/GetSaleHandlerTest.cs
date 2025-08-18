@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
 using FluentValidation;
@@ -20,23 +21,11 @@ public class GetSaleHandlerTest
     private GetSaleHandler CreateHandler() =>
         new GetSaleHandler(_saleRepository.Object, _mapper.Object);
 
-    private Sale CreateValidSale()
-    {
-        return Sale.Create(
-            "SALE-001",
-            DateTimeOffset.UtcNow,
-            Guid.NewGuid(),
-            "Customer Test",
-            Guid.NewGuid(),
-            "Branch Test"
-        );
-    }
-
     [Fact(DisplayName = "Should return sale when found")]
     public async Task Handle_ShouldReturnSale_WhenFound()
     {
         // Arrange
-        var sale = CreateValidSale();
+        var sale = SaleTestData.CreateValidSale();
         var query = new GetSaleQuery(sale.Id);
         var expectedResult = new GetSaleResult { Id = sale.Id };
 
