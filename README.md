@@ -50,6 +50,26 @@ API will be available at:
 
 ---
 
+## 🐳 Running Locally (without Docker)
+
+If you prefer to run directly on your machine:
+
+1. Install .NET 8 SDK and PostgreSQL 13+
+2. Create a PostgreSQL database and configure your connection string in appsettings.json:
+   ```json
+   "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n"
+    }
+   ```
+3. Apply migrations:
+   ```dotnet ef database update```
+4. Run the API:
+   ```dotnet run --project src/Ambev.DeveloperEvaluation.WebApi```
+5.Access swagger at:
+  ```http://localhost:{port}/swagger/index.html```
+
+---
+
 ## 🔑 Authentication
 
 To authenticate in Swagger UI:
