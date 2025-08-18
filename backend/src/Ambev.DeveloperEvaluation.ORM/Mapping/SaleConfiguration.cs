@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,7 +16,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping
         {
             builder.ToTable("Sales");
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).HasColumnType("uuid").HasDefaultValueSql("gen_random_uuid()");
+            builder.Property(x => x.Id).HasColumnType("uuid").ValueGeneratedNever();
             builder.Property(x => x.Number).IsRequired().HasMaxLength(32);
             builder.Property(x => x.Date).IsRequired();
             builder.Property(x => x.CustomerId).IsRequired();
@@ -25,12 +26,10 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping
             builder.Property(x => x.Total).HasColumnType("decimal(18,2)");
             builder.Property(x => x.IsCancelled).IsRequired();
 
-            builder.HasMany<SaleItem>("_items")
+            builder.HasMany(x => x.Items)
              .WithOne()
              .HasForeignKey("SaleId")
              .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasIndex(x => x.Number).IsUnique();
         }
     }
 }
