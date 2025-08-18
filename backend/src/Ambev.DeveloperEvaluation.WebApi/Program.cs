@@ -6,14 +6,11 @@ using Ambev.DeveloperEvaluation.Common.Security;
 using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
-using Ambev.DeveloperEvaluation.WebApi.Filters;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
 using Ambev.DeveloperEvaluation.WebApi.Setups;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
 using Serilog;
 
 namespace Ambev.DeveloperEvaluation.WebApi;

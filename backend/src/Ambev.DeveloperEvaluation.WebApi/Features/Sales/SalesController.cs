@@ -49,7 +49,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
                     Message = "Validation Failed",
                     Errors = validationResult.Errors
                     .Select(error => (ValidationErrorDetail)error)
-                }););
+                });
 
             var command = _mapper.Map<CreateSaleCommand>(request);
             var response = await _mediator.Send(command, cancellationToken);
@@ -81,7 +81,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
                     Message = "Validation Failed",
                     Errors = validationResult.Errors
                     .Select(error => (ValidationErrorDetail)error)
-                }););
+                });
 
             var query = _mapper.Map<GetSaleQuery>(request.Id);
             var response = await _mediator.Send(query, cancellationToken);
@@ -139,7 +139,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales
                     Message = "Validation Failed",
                     Errors = validationResult.Errors
                     .Select(error => (ValidationErrorDetail)error)
-                }););
+                });
 
             var command = _mapper.Map<CancelSaleCommand>(request);
             var response = await _mediator.Send(command, cancellationToken);
