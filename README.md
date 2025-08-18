@@ -67,7 +67,7 @@ Now you can call any secured endpoint.
 
 # 📦 Sales Endpoints (Requests & Responses)
 
-### 🔹 Create Sale – `POST /api/Sale`
+### 🔹 Create Sale – `POST /api/Sales`
 
 **Request**
 ```json
@@ -96,13 +96,19 @@ Now you can call any secured endpoint.
 ```json
 {
   "success": false,
-  "message": "Cannot sell more than 20 items of the same product"
+  "message": "Validation Failed",
+  "errors": [
+    {
+      "error": "LessThanOrEqualValidator",
+      "detail": "Quantity should be less or equal to 20."
+    }
+  ]
 }
 ```
 
 ---
 
-### 🔹 Get Sale by Id – `GET /api/Sale/{id}`
+### 🔹 Get Sale by Id – `GET /api/Sales/{id}`
 
 **Response – 200 OK**
 ```json
@@ -144,13 +150,14 @@ Now you can call any secured endpoint.
 ```json
 {
   "success": false,
-  "message": "Sale not found"
+  "message": "Sale not found.",
+  "errors": []
 }
 ```
 
 ---
 
-### 🔹 Get All Sales – `GET /api/Sale`
+### 🔹 Get All Sales – `GET /api/Sales`
 
 **Response – 200 OK**
 ```json
@@ -181,7 +188,7 @@ Now you can call any secured endpoint.
 
 ---
 
-### 🔹 Modify Sale – `PUT /api/Sale`
+### 🔹 Modify Sale – `PUT /api/Sales`
 
 **Request**
 ```json
@@ -194,14 +201,28 @@ Now you can call any secured endpoint.
 }
 ```
 
-**Response – 200 OK**
+**Response – 204 No Content**
+
+**Response – 400 Bad Request (Example: quantity > 20)**
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "e34d4f93-7b5f-48a8-a1f0-0bb1f9cb3a4f",
-    "totalAmount": 500
-  }
+  "success": false,
+  "message": "Validation Failed",
+  "errors": [
+    {
+      "error": "LessThanOrEqualValidator",
+      "detail": "Quantity should be less or equal to 20."
+    }
+  ]
+}
+```
+
+**Response - 404 Not Found**
+```json
+{
+  "success": false,
+  "message": "Sale not found.",
+  "errors": []
 }
 ```
 
@@ -209,22 +230,14 @@ Now you can call any secured endpoint.
 
 ### 🔹 Cancel Sale – `PATCH /api/Sale/CancelSale/{id}`
 
-**Response – 200 OK**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "e34d4f93-7b5f-48a8-a1f0-0bb1f9cb3a4f",
-    "cancelled": true
-  }
-}
-```
+**Response – 204 No Content**
 
 **Response – 404 Not Found**
 ```json
 {
   "success": false,
-  "message": "Sale not found"
+  "message": "Sale not found.",
+  "errors": []
 }
 ```
 
