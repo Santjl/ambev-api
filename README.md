@@ -74,6 +74,17 @@ If you prefer to run directly on your machine:
 
 To authenticate in Swagger UI:
 1. Create an user in `POST /api/users`
+   Example:
+   ```json
+   {
+      "username": "test",
+      "password": "Test@1234",
+      "phone": "+5521999999999",
+      "email": "test@test.com",
+      "status": 1,
+      "role": 3
+   }
+   ```
 1. Request a token via `POST /api/auth/login` with your credentials.
 2. Copy the returned **JWT token**.
 3. In Swagger UI, click **Authorize** and paste:  
