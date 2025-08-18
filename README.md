@@ -65,7 +65,7 @@ If you prefer to run directly on your machine:
    ```dotnet ef database update```
 4. Run the API:
    ```dotnet run --project src/Ambev.DeveloperEvaluation.WebApi```
-5.Access swagger at:
+5. Access swagger at:
   ```http://localhost:{port}/swagger/index.html```
 
 ---
