@@ -28,12 +28,12 @@ namespace Ambev.DeveloperEvaluation.ORM.Repositories
 
         public Task<List<Sale>> GetAllSalesAsync(CancellationToken ct)
         {
-            return context.Sales.ToListAsync(ct);
+            return context.Sales.Include(x => x.Items).ToListAsync(ct);
         }
 
         public async Task SaveChangesAsync(CancellationToken ct)
         {
             await context.SaveChangesAsync(ct);
-        } 
+        }
     }
 }
